@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Godot Frame Animator</title>
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob: file:; connect-src 'self'; font-src 'self';"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="titlebar" id="titlebar">
+    <div class="titlebar-brand">
+      <span class="titlebar-mark" aria-hidden="true"></span>
+      <span class="titlebar-title" id="titlebarTitle">Godot Frame Animator</span>
+    </div>
+    <div class="titlebar-actions">
+      <div class="settings-wrap" id="settingsWrap">
+        <button type="button" class="titlebar-btn settings" id="settingsBtn" title="设置" aria-label="设置" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+            <path
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+            />
+          </svg>
+        </button>
+        <div class="settings-panel hidden" id="settingsPanel" role="dialog" aria-label="设置">
+          <div class="settings-title">设置</div>
+          <label class="settings-row">
+            <span>
+              悬停帧对比
+              <small>点选一帧作参考，悬停另一帧时对比</small>
+            </span>
+            <input type="checkbox" id="settingHoverCompare" checked />
+          </label>
+          <div class="settings-row settings-row-stack" id="settingCompareModeRow">
+            <span>
+              对比方式
+              <small>分栏看清两帧；重叠=本帧原色+参考反色</small>
+            </span>
+            <div class="settings-seg" id="settingCompareModeSeg" role="group" aria-label="对比方式">
+              <button type="button" class="settings-seg-btn is-active" data-compare-mode="split">左右分栏</button>
+              <button type="button" class="settings-seg-btn" data-compare-mode="overlap">重叠显示</button>
+            </div>
+          </div>
+          <label class="settings-row">
+            <span>
+              浅色预览背景
+              <small>快速预览区域改用浅色棋盘</small>
+            </span>
+            <input type="checkbox" id="settingPreviewLight" />
+          </label>
+        </div>
+      </div>
+      <button type="button" class="titlebar-btn" id="btnMin" title="最小化" aria-label="最小化">
+        <svg viewBox="0 0 10 10"><rect y="4.5" width="10" height="1.2" rx="0.4"></rect></svg>
+      </button>
+      <button type="button" class="titlebar-btn" id="btnMax" title="最大化" aria-label="最大化">
+        <svg class="icon-max" viewBox="0 0 10 10" aria-hidden="true"><rect x="1" y="1" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.2"></rect></svg>
+        <svg class="icon-restore" viewBox="0 0 10 10" aria-hidden="true">
+          <path fill="none" stroke="currentColor" stroke-width="1.2" d="M3.2 1.2h5.6v5.6H7.6"></path>
+          <rect x="1.2" y="3.2" width="5.6" height="5.6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+        </svg>
+      </button>
+      <button type="button" class="titlebar-btn close" id="btnClose" title="关闭" aria-label="关闭">
+        <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="app">
+    <header class="header">
+      <div class="header-brand">帧库</div>
+      <div class="header-meta" id="videoMeta">未加载视频</div>
+    </header>
+
+    <main class="layout" id="mainLayout">
+      <aside class="panel panel-controls" id="panelControls">
+        <section class="card">
+          <div class="card-head">
+            <span class="step-no">1</span>
+            <h2>导入视频</h2>
+          </div>
+          <div class="dropzone" id="dropzone" tabindex="0" role="button">
+            <input type="file" id="videoInput" accept="video/*" hidden />
+            <span class="dropzone-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 16V6"></path>
+                <path d="M8 9l4-4 4 4"></path>
+                <path d="M4 18h16"></path>
+              </svg>
+            </span>
+            <strong>点击选择视频，或拖拽到此处</strong>
+            <span>MP4 / WebM / MOV · Ctrl+O</span>
+          </div>
+          <video id="video" class="video-preview" controls playsinline></video>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-no">2</span>
+            <h2>抽帧设置</h2>
+          </div>
+          <div class="field-grid">
+            <label>
+              抽帧模式
+              <select id="extractMode">
+                <option value="fps">按目标帧率 (FPS)</option>
+                <option value="interval">每隔 N 帧</option>
+                <option value="time">每隔 N 毫秒</option>
+              </select>
+            </label>
+            <label id="paramFpsWrap">
+              目标 FPS
+              <input type="number" id="targetFps" min="0.5" max="60" step="0.5" value="8" />
+            </label>
+            <label id="paramIntervalWrap" class="hidden">
+              帧间隔
+              <input type="number" id="frameInterval" min="1" max="300" step="1" value="3" />
+            </label>
+            <label id="paramTimeWrap" class="hidden">
+              时间间隔 (ms)
+              <input type="number" id="timeInterval" min="16" max="5000" step="1" value="100" />
+            </label>
+            <label>
+              起始时间 (秒)
+              <input type="number" id="startTime" min="0" step="0.01" value="0" />
+            </label>
+            <label title="留空表示抽取到视频结尾">
+              结束时间 (秒)
+              <input type="number" id="endTime" min="0" step="0.01" placeholder="空=全部" />
+            </label>
+            <label title="0 表示保持视频原始宽度">
+              最大宽度 (px)
+              <input type="number" id="maxWidth" min="0" max="4096" step="1" value="0" placeholder="0=原尺寸" />
+            </label>
+            <label>
+              最多抽取帧数
+              <input type="number" id="maxFrames" min="1" max="2000" step="1" value="120" />
+            </label>
+          </div>
+          <button type="button" class="btn btn-primary" id="extractBtn" disabled>开始抽帧</button>
+          <div class="progress hidden" id="extractProgress">
+            <div class="progress-track">
+              <div class="progress-bar" id="extractProgressBar"></div>
+            </div>
+            <span id="extractProgressText">0%</span>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <span class="step-no">4</span>
+            <h2>导出 Godot</h2>
+          </div>
+          <div class="field-grid">
+            <label>
+              动画名称
+              <input type="text" id="animName" value="default" />
+            </label>
+            <label>
+              播放 FPS
+              <input type="number" id="exportFps" min="0.5" max="60" step="0.5" value="8" />
+            </label>
+            <label>
+              循环播放
+              <select id="exportLoop">
+                <option value="true">是</option>
+                <option value="false">否</option>
+              </select>
+            </label>
+            <label>
+              导出形式
+              <select id="exportMode">
+                <option value="frames">独立 PNG + SpriteFrames</option>
+                <option value="sheet">精灵图集 + SpriteFrames</option>
+                <option value="png_only">仅 PNG 序列</option>
+              </select>
+            </label>
+            <label class="span-2">
+              Godot 资源路径前缀
+              <input type="text" id="resPath" value="res://animations/frames/" />
+            </label>
+            <label>
+              文件名前缀
+              <input type="text" id="filePrefix" value="frame" />
+            </label>
+            <label>
+              图集每行帧数
+              <input type="number" id="sheetColumns" min="1" max="64" value="8" />
+            </label>
+            <label>
+              固定锚点烘焙
+              <select id="exportAnchorMode">
+                <option value="origin" selected>原图坐标（推荐，防错位）</option>
+                <option value="bottom">底中（角色脚底）</option>
+                <option value="center">主体中心</option>
+                <option value="right">右中（箭尖/枪口）</option>
+                <option value="none">关闭</option>
+              </select>
+            </label>
+            <label>
+              锚点边距 (px)
+              <input type="number" id="exportAnchorPad" min="0" max="128" value="8" />
+            </label>
+          </div>
+          <label class="checkbox">
+            <input type="checkbox" id="includeScene" checked />
+            同时导出 AnimatedSprite2D 示例场景 (.tscn)
+          </label>
+          <button type="button" class="btn btn-primary" id="exportBtn" disabled>导出 ZIP</button>
+          <p class="hint">
+            选中帧后导出 Godot 4 SpriteFrames。火焰/拖尾特效请用「原图坐标」或「右中」，勿用「底中」——底中按包围盒底边对齐，半透明火焰会把整帧顶歪。
+          </p>
+        </section>
+      </aside>
+
+      <section class="panel panel-main">
+        <div class="workspace-view" id="viewLibrary">
+          <div class="toolbar">
+            <div class="toolbar-title">
+              <span class="step-no">3</span>
+              <h2>帧列表 <span id="frameCountLabel">(0)</span></h2>
+            </div>
+            <div class="toolbar-actions">
+              <button type="button" class="btn btn-ghost" id="selectAllBtn" disabled>全选</button>
+              <button type="button" class="btn btn-ghost" id="selectNoneBtn" disabled>全不选</button>
+              <button type="button" class="btn btn-ghost" id="invertBtn" disabled>反选</button>
+              <button type="button" class="btn btn-accent" id="mattingBtn" disabled>抠图</button>
+              <button type="button" class="btn btn-accent" id="watermarkBtn" disabled>去水印</button>
+              <button type="button" class="btn btn-ghost" id="undoWatermarkBtn" disabled>撤销</button>
+              <button type="button" class="btn btn-ghost" id="clearFramesBtn" disabled>清空</button>
+            </div>
+          </div>
+          <div class="batch-bar hidden" id="batchBar" aria-live="polite">
+            <div class="progress-track batch-bar-track">
+              <div class="progress-bar" id="batchBarProgress"></div>
+            </div>
+            <span id="batchBarText">批量处理中…</span>
+          </div>
+          <p class="hint toolbar-hint">多选帧后点「抠图 / 去水印」可批量处理；预览满意后导出 ZIP。</p>
+          <div class="frame-grid" id="frameGrid"></div>
+          <div class="empty-state" id="emptyState">抽帧后将在此显示全部帧</div>
+
+          <div class="preview-card" id="previewCard">
+            <div class="preview-header">
+              <div class="preview-title-row">
+                <h2>快速预览（已选帧）</h2>
+                <button type="button" class="btn btn-ghost" id="previewFsBtn" title="全屏预览" disabled>全屏预览</button>
+              </div>
+              <div class="preview-controls">
+                <button type="button" class="btn btn-ghost" id="playBtn" disabled>播放</button>
+                <label class="inline">
+                  预览 FPS
+                  <input type="number" id="previewFps" min="0.5" max="60" step="0.5" value="8" />
+                </label>
+                <label class="checkbox inline">
+                  <input type="checkbox" id="previewLoop" checked />
+                  循环
+                </label>
+                <span id="previewFrameInfo">—</span>
+                <button type="button" class="btn btn-accent preview-fs-exit" id="previewFsExitBtn" hidden>退出全屏</button>
+              </div>
+            </div>
+            <div class="preview-stage" id="previewStage">
+              <canvas id="previewCanvas" width="320" height="320"></canvas>
+              <button type="button" class="preview-fs-fab" id="previewFsFab" hidden title="退出全屏">退出全屏 · Esc</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal hidden" id="matModal" role="dialog" aria-modal="true" aria-labelledby="matTitle">
+    <div class="modal-backdrop" id="matBackdrop"></div>
+    <div class="modal-panel mat-panel">
+      <header class="modal-header">
+        <h2 id="matTitle">抠图</h2>
+        <button type="button" class="btn btn-ghost" id="matCloseBtn">关闭</button>
+      </header>
+      <div class="modal-body mat-body">
+        <div class="wm-stage-wrap mat-stage-wrap">
+          <canvas id="matCanvas" class="mat-canvas"></canvas>
+          <p class="hint" id="matHint">AI 首次运行会下载 ONNX 模型（约 40–80MB），之后本地推理。</p>
+        </div>
+        <aside class="wm-sidebar mat-sidebar">
+          <div class="field-grid wm-fields mat-fields">
+            <label class="mat-field-wide">
+              抠图引擎
+              <select id="matEngine">
+                <option value="hybrid" selected>混合（AI + 色键精修，推荐绿幕）</option>
+                <option value="ai">仅 AI 智能抠图</option>
+                <option value="chroma">仅纯色色键</option>
+              </select>
+            </label>
+            <label>
+              应用范围
+              <select id="matScope">
+                <option value="selected" selected>已选帧（批量）</option>
+                <option value="all">全部帧（批量）</option>
+              </select>
+            </label>
+            <label id="matModelWrap">
+              AI 模型
+              <select id="matModel">
+                <option value="medium" selected>medium（更高质量）</option>
+                <option value="small">small（更快）</option>
+              </select>
+            </label>
+            <label id="matTolWrap">
+              色键容差
+              <input type="number" id="matTolerance" min="0" max="120" value="48" />
+            </label>
+            <label id="matSoftWrap">
+              色键柔化
+              <input type="number" id="matSoftness" min="1" max="80" value="32" />
+            </label>
+            <label id="matSpillWrap">
+              溢色抑制 (0–1)
+              <input type="number" id="matSpill" min="0" max="1" step="0.05" value="0.7" />
+            </label>
+            <label id="matSampleWrap">
+              背景取样
+              <select id="matSample">
+                <option value="corners" selected>边缘采样</option>
+                <option value="topleft">左上角</option>
+                <option value="pick">点击原图取样</option>
+              </select>
+            </label>
+            <label>
+              边缘收缩
+              <input type="number" id="matErode" min="0" max="6" step="1" value="1" />
+            </label>
+            <label>
+              边缘扩张
+              <input type="number" id="matDilate" min="0" max="6" step="1" value="1" />
+            </label>
+            <label>
+              边缘羽化
+              <input type="number" id="matFeather" min="0" max="8" step="0.5" value="1.5" />
+            </label>
+            <label>
+              边缘去污染 (0–1)
+              <input type="number" id="matDecontam" min="0" max="1" step="0.05" value="0.5" />
+            </label>
+          </div>
+          <div class="mat-footer">
+            <div class="mat-footer-info">
+              <p class="hint" id="matBatchInfo">将批量处理已选帧</p>
+              <p class="hint" id="matStatus">绿幕素材可用「纯色色键」更快；复杂背景请用 AI。</p>
+            </div>
+            <div class="wm-actions mat-actions">
+              <div class="mat-ref-nav">
+                <button type="button" class="btn btn-ghost" id="matRefPrev" title="上一参考帧">‹</button>
+                <span id="matRefLabel">参考帧 1/1</span>
+                <button type="button" class="btn btn-ghost" id="matRefNext" title="下一参考帧">›</button>
+              </div>
+              <button type="button" class="btn btn-ghost" id="matPreviewBtn">预览当前参考帧</button>
+              <button type="button" class="btn btn-ghost" id="matResetPreviewBtn">还原预览</button>
+              <button type="button" class="btn btn-primary" id="matApplyBtn">批量应用到帧</button>
+            </div>
+          </div>
+          <div class="progress hidden" id="matProgress">
+            <div class="progress-track">
+              <div class="progress-bar" id="matProgressBar"></div>
+            </div>
+            <span id="matProgressText">0%</span>
+          </div>
+          <p class="hint mat-credit">基于 GitHub <code>imgly/background-removal-js</code> 本地 ONNX；结果可撤销。</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="wmModal" role="dialog" aria-modal="true" aria-labelledby="wmTitle">
+    <div class="modal-backdrop" id="wmBackdrop"></div>
+    <div class="modal-panel">
+      <header class="modal-header">
+        <h2 id="wmTitle">去水印</h2>
+        <button type="button" class="btn btn-ghost" id="wmCloseBtn">关闭</button>
+      </header>
+      <div class="modal-body">
+        <div class="wm-stage-wrap">
+          <canvas id="wmCanvas"></canvas>
+          <p class="hint">在画面上拖拽框选水印区域，可多次框选多个区域。</p>
+        </div>
+        <aside class="wm-sidebar">
+          <div class="field-grid wm-fields">
+            <label>
+              处理方法
+              <select id="wmMethod">
+                <option value="inpaint">智能修补（推荐）</option>
+                <option value="blur">区域模糊</option>
+                <option value="edge">边缘色填充</option>
+              </select>
+            </label>
+            <label>
+              应用范围
+              <select id="wmScope">
+                <option value="selected" selected>已选帧（批量）</option>
+                <option value="all">全部帧（批量）</option>
+              </select>
+            </label>
+            <label>
+              边缘羽化 (px)
+              <input type="number" id="wmFeather" min="0" max="32" value="3" />
+            </label>
+            <label id="wmBlurWrap" class="hidden">
+              模糊半径 (px)
+              <input type="number" id="wmBlur" min="1" max="48" value="10" />
+            </label>
+          </div>
+          <p class="hint" id="wmBatchInfo">框选一次水印区域，即可批量应用到多帧</p>
+          <p class="hint" id="wmRectInfo">尚未框选区域</p>
+          <div class="wm-actions">
+            <button type="button" class="btn btn-ghost" id="wmUndoRectBtn">撤销上一框</button>
+            <button type="button" class="btn btn-ghost" id="wmClearRectBtn">清空框选</button>
+            <button type="button" class="btn btn-ghost" id="wmPreviewBtn">预览当前帧</button>
+            <button type="button" class="btn btn-ghost" id="wmResetPreviewBtn">还原预览</button>
+            <button type="button" class="btn btn-primary" id="wmApplyBtn">批量应用到帧</button>
+          </div>
+          <div class="progress hidden" id="wmProgress">
+            <div class="progress-track">
+              <div class="progress-bar" id="wmProgressBar"></div>
+            </div>
+            <span id="wmProgressText">0%</span>
+          </div>
+          <p class="hint">角标 / logo 优先用「智能修补」；大面积文字可试「模糊」。</p>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="watermark.js"></script>
+  <script src="chroma.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+{
+  "name": "godot-frame-animator",
+  "productName": "Godot Frame Animator",
+  "version": "1.0.0",
+  "description": "从视频抽帧、AI抠图、去水印、预览并导出 Godot 4 SpriteFrames 的桌面工具",
+  "main": "electron/main.js",
+  "author": "Godot Frame Animator Contributors",
+  "license": "MIT",
+  "homepage": "https://github.com/YOUR_USERNAME/godot-frame-animator",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/godot-frame-animator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/godot-frame-animator/issues"
+  },
+  "keywords": [
+    "godot",
+    "spriteframes",
+    "animation",
+    "video",
+    "frames",
+    "electron",
+    "game-dev"
+  ],
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.godotframeanimator.app",
+    "productName": "Godot Frame Animator",
+    "copyright": "Copyright © 2026 Godot Frame Animator Contributors",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/{onnxruntime-node,sharp,@imgly}/**/*"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "${productName}-${version}-win-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.graphics-design",
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Graphics",
+      "artifactName": "${productName}-${version}-linux-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Godot Frame Animator"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "YOUR_USERNAME",
+        "repo": "godot-frame-animator"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^34.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "@imgly/background-removal-node": "^1.4.5"
+  }
+}
